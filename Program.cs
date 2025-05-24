@@ -15,6 +15,13 @@ builder.Services.AddDbContext<FeedbackContext>(options =>
 
 var app = builder.Build();
 
+// Ejecutar migraciones automáticamente al iniciar (para Docker/Render)
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<FeedbackContext>();
+    db.Database.Migrate();
+}
+
 // Configure the HTTP request pipeline.
 if (!app.Environment.IsDevelopment())
 {
