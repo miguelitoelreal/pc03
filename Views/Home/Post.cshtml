@@ -3,32 +3,39 @@
     ViewData["Title"] = Model.Title;
 }
 <div class="container mt-4">
-    <h2>@Model.Title</h2>
-    <p class="text-muted">por @Model.Author?.name (@Model.Author?.email)</p>
-    <p>@Model.Body</p>
-    <hr />
-    <h4>Comentarios (@Model.Comments.Count)</h4>
-    <ul class="list-group mb-3">
-        @foreach (var comment in Model.Comments)
-        {
-            <li class="list-group-item">
-                <strong>@comment.name</strong> <span class="text-muted small">(@comment.email)</span>
-                <div>@comment.body</div>
-            </li>
-        }
-    </ul>
-    <div class="mb-3">
-        <form id="feedbackForm">
-            <input type="hidden" name="postId" value="@Model.Id" />
-            <button type="button" class="btn btn-success me-2" onclick="sendFeedback('like')">👍 Me gustó</button>
-            <button type="button" class="btn btn-danger" onclick="sendFeedback('dislike')">👎 No me gustó</button>
-        </form>
-        <div id="feedbackMsg" class="mt-2"></div>
+    <div class="card fun-card p-4">
+        <h2 class="fun-title">@Model.Title</h2>
+        <p class="text-muted">por <b>@Model.Author?.name</b> <span class="badge bg-info text-dark ms-2">@Model.Author?.email</span></p>
+        <p class="fs-5">@Model.Body</p>
+        <div class="d-flex align-items-center mb-3">
+            <span class="fun-badge me-2">@Model.Comments.Count comentarios 💬</span>
+        </div>
+        <hr />
+        <h4 class="mb-3">Comentarios</h4>
+        <div>
+            @foreach (var comment in Model.Comments)
+            {
+                <div class="fun-comment">
+                    <strong>@comment.name</strong> <span class="text-muted small">(@comment.email)</span>
+                    <div>@comment.body</div>
+                </div>
+            }
+        </div>
+        <div class="mb-3 mt-4">
+            <form id="feedbackForm">
+                <input type="hidden" name="postId" value="@Model.Id" />
+                <button type="button" class="btn btn-success fun-btn me-2" id="likeBtn" onclick="sendFeedback('like')">👍 Me gustó</button>
+                <button type="button" class="btn btn-danger fun-btn" id="dislikeBtn" onclick="sendFeedback('dislike')">👎 No me gustó</button>
+            </form>
+            <div id="feedbackMsg" class="mt-2"></div>
+        </div>
     </div>
 </div>
 @section Scripts {
 <script>
+    let feedbackSent = false;
     function sendFeedback(sentimiento) {
+        if (feedbackSent) return;
         var postId = @Model.Id;
         fetch('/api/feedback', {
             method: 'POST',
@@ -36,8 +43,18 @@
             body: JSON.stringify({ postId: postId, sentimiento: sentimiento })
         })
         .then(r => r.ok ? r.text() : r.json().then(j => { throw j; }))
-        .then(msg => document.getElementById('feedbackMsg').innerText = '¡Gracias por tu feedback!')
-        .catch(err => document.getElementById('feedbackMsg').innerText = err.message || 'Ya votaste o error.');
+        .then(msg => {
+            document.getElementById('feedbackMsg').innerHTML = '<span class="text-success">¡Gracias por tu feedback! 🎉</span>';
+            document.getElementById('likeBtn').disabled = true;
+            document.getElementById('dislikeBtn').disabled = true;
+            feedbackSent = true;
+        })
+        .catch(err => {
+            document.getElementById('feedbackMsg').innerHTML = '<span class="text-danger">' + (err.message || 'Ya votaste o error.') + '</span>';
+            document.getElementById('likeBtn').disabled = true;
+            document.getElementById('dislikeBtn').disabled = true;
+            feedbackSent = true;
+        });
     }
 </script>
 }

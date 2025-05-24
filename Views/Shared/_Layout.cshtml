@@ -4,16 +4,27 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - NewsPortal</title>
-    <script type="importmap"></script>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
-    <link rel="stylesheet" href="~/NewsPortal.styles.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Roboto:wght@400;700&display=swap" />
+    <style>
+        body { background: linear-gradient(135deg, #f8fafc 0%, #e0e7ff 100%); font-family: 'Roboto', sans-serif; }
+        .navbar-brand { font-family: 'Fredoka One', cursive; font-size: 2rem; color: #4f46e5 !important; }
+        .navbar { background: #fff0f6 !important; }
+        .footer { background: #f3f4f6; }
+        .fun-title { color: #4f46e5; font-family: 'Fredoka One', cursive; letter-spacing: 2px; }
+        .fun-card { border-radius: 1.5rem; box-shadow: 0 4px 16px #a5b4fc33; border: none; transition: transform 0.2s; }
+        .fun-card:hover { transform: scale(1.03) rotate(-1deg); box-shadow: 0 8px 32px #6366f133; }
+        .fun-btn { border-radius: 2rem; font-weight: bold; font-size: 1.1rem; }
+        .fun-badge { background: #fbbf24; color: #fff; font-size: 1rem; border-radius: 1rem; padding: 0.3em 0.8em; }
+        .fun-comment { background: #f1f5f9; border-radius: 1rem; margin-bottom: 0.5em; padding: 0.7em 1em; }
+    </style>
 </head>
 <body>
     <header>
-        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light bg-white border-bottom box-shadow mb-3">
+        <nav class="navbar navbar-expand-sm navbar-toggleable-sm navbar-light border-bottom box-shadow mb-3">
             <div class="container-fluid">
-                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">NewsPortal</a>
+                <a class="navbar-brand" asp-area="" asp-controller="Home" asp-action="Index">📰 NewsPortal</a>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target=".navbar-collapse" aria-controls="navbarSupportedContent"
                         aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -21,10 +32,10 @@
                 <div class="navbar-collapse collapse d-sm-inline-flex justify-content-between">
                     <ul class="navbar-nav flex-grow-1">
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Home</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Index">Inicio</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+                            <a class="nav-link text-dark" asp-area="" asp-controller="Home" asp-action="Privacy">Privacidad</a>
                         </li>
                     </ul>
                 </div>
@@ -36,10 +47,9 @@
             @RenderBody()
         </main>
     </div>
-
-    <footer class="border-top footer text-muted">
-        <div class="container">
-            &copy; 2025 - NewsPortal - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacy</a>
+    <footer class="border-top footer text-muted mt-5">
+        <div class="container text-center">
+            <span style="font-size:1.2em">&copy; 2025 - NewsPortal 🎉</span> - <a asp-area="" asp-controller="Home" asp-action="Privacy">Privacidad</a>
         </div>
     </footer>
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
