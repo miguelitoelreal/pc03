@@ -47,13 +47,21 @@
                 document.getElementById('feedbackMsg').innerHTML = '<span class="text-success">¡Gracias por tu feedback! 🎉</span>';
             } else {
                 let msg = 'Error desconocido';
+                let text = '';
                 try {
-                    const data = await r.json();
-                    msg = data.message || JSON.stringify(data);
+                    // Intenta leer como texto primero
+                    text = await r.text();
+                    // Intenta parsear como JSON si no es HTML
+                    if (text.trim().startsWith('{')) {
+                        const data = JSON.parse(text);
+                        msg = data.message || JSON.stringify(data);
+                    } else if (text.trim().startsWith('<')) {
+                        msg = 'Error del servidor o ruta no encontrada.';
+                    } else {
+                        msg = text;
+                    }
                 } catch {
-                    const text = await r.text();
-                    if (text.startsWith('<')) msg = 'Error del servidor o ruta no encontrada.';
-                    else msg = text;
+                    msg = text || 'Error inesperado.';
                 }
                 document.getElementById('feedbackMsg').innerHTML = '<span class="text-danger">' + msg + '</span>';
             }
