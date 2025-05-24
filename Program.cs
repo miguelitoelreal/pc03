@@ -1,4 +1,6 @@
 using NewsPortal.Services;
+using NewsPortal.Data;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -7,6 +9,9 @@ builder.Services.AddControllersWithViews();
 
 // Registrar HttpClient y PostService para inyección de dependencias
 builder.Services.AddHttpClient<PostService>();
+
+builder.Services.AddDbContext<FeedbackContext>(options =>
+    options.UseSqlite(builder.Configuration.GetConnectionString("FeedbackConnection") ?? "Data Source=feedback.db"));
 
 var app = builder.Build();
 

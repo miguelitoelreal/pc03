@@ -1,8 +1,9 @@
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Net.Http.Json;
 using System.Threading.Tasks;
+using System.Collections.Generic;
 using System.Linq;
+using System;
 
 namespace NewsPortal.Services
 {
@@ -44,23 +45,21 @@ namespace NewsPortal.Services
     public class PostService
     {
         private readonly HttpClient _httpClient;
+        private static List<UserDto>? _userCache;
+        private static List<CommentDto>? _commentCache;
+        private static DateTime _cacheTime = DateTime.MinValue;
+        private static readonly TimeSpan _cacheDuration = TimeSpan.FromMinutes(10);
         public PostService(HttpClient httpClient)
         {
             _httpClient = httpClient;
         }
 
-        public async Task<List<PostDto>> GetPostsAsync()
-        {
-            var posts = await _httpClient.GetFromJsonAsync<List<PostDto>>("https://jsonplaceholder.typicode.com/posts");
-            return posts ?? new List<PostDto>();
-        }
-
         public async Task<List<EnrichedPostDto>> GetEnrichedPostsAsync()
         {
             var posts = await _httpClient.GetFromJsonAsync<List<PostDto>>("https://jsonplaceholder.typicode.com/posts");
-            var users = await _httpClient.GetFromJsonAsync<List<UserDto>>("https://jsonplaceholder.typicode.com/users");
-            var comments = await _httpClient.GetFromJsonAsync<List<CommentDto>>("https://jsonplaceholder.typicode.com/comments");
-
+            await EnsureCacheAsync();
+            var users = _userCache;
+            var comments = _commentCache;
             var enriched = posts?.Select(post => new EnrichedPostDto
             {
                 Id = post.id,
@@ -69,7 +68,6 @@ namespace NewsPortal.Services
                 Author = users?.FirstOrDefault(u => u.id == post.userId),
                 Comments = comments?.Where(c => c.postId == post.id).ToList() ?? new List<CommentDto>()
             }).ToList() ?? new List<EnrichedPostDto>();
-
             return enriched;
         }
 
@@ -77,16 +75,30 @@ namespace NewsPortal.Services
         {
             var post = await _httpClient.GetFromJsonAsync<PostDto>($"https://jsonplaceholder.typicode.com/posts/{id}");
             if (post == null) return null;
-            var user = await _httpClient.GetFromJsonAsync<UserDto>($"https://jsonplaceholder.typicode.com/users/{post.userId}");
-            var comments = await _httpClient.GetFromJsonAsync<List<CommentDto>>($"https://jsonplaceholder.typicode.com/comments?postId={id}");
+            await EnsureCacheAsync();
+            var user = _userCache?.FirstOrDefault(u => u.id == post.userId);
+            var comments = _commentCache?.Where(c => c.postId == id).ToList() ?? new List<CommentDto>();
             return new EnrichedPostDto
             {
                 Id = post.id,
                 Title = post.title,
                 Body = post.body,
                 Author = user,
-                Comments = comments ?? new List<CommentDto>()
+                Comments = comments
             };
+        }
+
+        private async Task EnsureCacheAsync()
+        {
+            if (_userCache == null || _commentCache == null || DateTime.UtcNow - _cacheTime > _cacheDuration)
+            {
+                var usersTask = _httpClient.GetFromJsonAsync<List<UserDto>>("https://jsonplaceholder.typicode.com/users");
+                var commentsTask = _httpClient.GetFromJsonAsync<List<CommentDto>>("https://jsonplaceholder.typicode.com/comments");
+                await Task.WhenAll(usersTask, commentsTask);
+                _userCache = usersTask.Result ?? new List<UserDto>();
+                _commentCache = commentsTask.Result ?? new List<CommentDto>();
+                _cacheTime = DateTime.UtcNow;
+            }
         }
     }
 }
