@@ -1,7 +1,12 @@
+using NewsPortal.Services;
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+
+// Registrar HttpClient y PostService para inyección de dependencias
+builder.Services.AddHttpClient<PostService>();
 
 var app = builder.Build();
 

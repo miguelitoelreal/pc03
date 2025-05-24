@@ -1,21 +1,32 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using NewsPortal.Models;
+using NewsPortal.Services;
 
 namespace NewsPortal.Controllers;
 
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
+    private readonly PostService _postService;
 
-    public HomeController(ILogger<HomeController> logger)
+    public HomeController(ILogger<HomeController> logger, PostService postService)
     {
         _logger = logger;
+        _postService = postService;
     }
 
-    public IActionResult Index()
+    public async Task<IActionResult> Index()
     {
-        return View();
+        var posts = await _postService.GetEnrichedPostsAsync();
+        return View(posts);
+    }
+
+    public async Task<IActionResult> Post(int id)
+    {
+        var post = await _postService.GetEnrichedPostByIdAsync(id);
+        if (post == null) return NotFound();
+        return View(post);
     }
 
     public IActionResult Privacy()
