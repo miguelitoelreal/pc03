@@ -1,22 +1,174 @@
 ﻿@model List<NewsPortal.Services.EnrichedPostDto>
 @{
-    ViewData["Title"] = "Noticias";
+    ViewData["Title"] = "NewsHub | Noticias Inteligentes y Opinión Global";
 }
 <div class="container mt-4">
-    <h1 class="fun-title mb-4 text-center">📰 Noticias Divertidas</h1>
+    <div class="text-center mb-4">
+        <h1 class="fun-title display-4 fw-bold" style="letter-spacing:1px;">📰 NewsHub</h1>
+        <div class="lead text-secondary" style="font-size:1.25rem; font-weight:500;">
+            La actualidad mundial, enriquecida y a tu alcance
+        </div>
+        <div class="mb-2" style="color:#6366f1;font-size:1.1rem;">
+            Noticias, análisis y voces globales en un solo lugar
+        </div>
+        <div class="d-flex justify-content-center align-items-center gap-3 mt-2">
+            <button id="toggleTheme" class="btn btn-outline-dark btn-sm" aria-label="Cambiar modo claro/oscuro"><i class="bi bi-moon"></i> Modo Oscuro</button>
+            <select id="langSelect" class="form-select form-select-sm w-auto" aria-label="Seleccionar idioma">
+                <option value="es">Español</option>
+                <option value="en">English</option>
+            </select>
+        </div>
+    </div>
     <div class="row g-4">
+        <div class="col-12 mb-3 d-flex flex-wrap gap-2 align-items-center">
+            <input id="searchInput" class="form-control form-control-lg flex-grow-1" type="text" placeholder="Buscar por título, autor o contenido..." />
+            <select id="authorFilter" class="form-select form-select-lg w-auto" aria-label="Filtrar por autor">
+                <option value="">Todos los autores</option>
+            </select>
+        </div>
+        <div id="posts-list" class="row g-4">
         @foreach (var post in Model)
         {
-            <div class="col-md-6 col-lg-4">
-                <div class="card fun-card h-100">
+            var safeTitle = post.Title?.ToLower() ?? "";
+            var safeAuthor = post.Author?.name?.ToLower() ?? "";
+            var safeBody = post.Body?.ToLower() ?? "";
+            <div class="col-md-6 col-lg-4 post-card" data-title="@safeTitle" data-author="@safeAuthor" data-body="@safeBody" data-authorname="@post.Author?.name">
+                <div class="card fun-card h-100 shadow-sm">
                     <div class="card-body d-flex flex-column justify-content-between">
                         <h5 class="card-title">@post.Title</h5>
                         <p class="card-text text-muted mb-2">por <b>@post.Author?.name</b></p>
                         <span class="fun-badge mb-2">@post.Comments.Count comentarios</span>
-                        <a href="@Url.Action("Post", "Home", new { id = post.Id })" class="btn btn-primary fun-btn mt-auto">Ver más 🚀</a>
+                        <div class="mb-2" id="feedback-summary-@post.Id">
+                            <span class="badge bg-success" id="like-count-@post.Id">👍 0</span>
+                            <span class="badge bg-danger ms-2" id="dislike-count-@post.Id">👎 0</span>
+                        </div>
+                        <a href="@Url.Action("Post", "Home", new { id = post.Id })" class="btn btn-primary fun-btn mt-auto">Ver más <i class="bi bi-arrow-right-circle"></i></a>
                     </div>
                 </div>
             </div>
         }
+        </div>
+    </div>
+    <div class="d-flex justify-content-center mt-4 align-items-center gap-2" id="pagination">
+        <button id="prevPage" class="btn btn-outline-primary me-2">&laquo;</button>
+        <div id="pagePills" class="d-inline-flex gap-1"></div>
+        <button id="nextPage" class="btn btn-outline-primary ms-2">&raquo;</button>
+    </div>
+    <div id="loadingSpinner" class="text-center my-5" style="display:none;">
+        <div class="spinner-border text-primary" role="status">
+            <span class="visually-hidden">Cargando...</span>
+        </div>
     </div>
 </div>
+@section Scripts {
+<script>
+    // Feedback resumen
+    fetch('/api/feedback')
+        .then(r => r.json())
+        .then(data => {
+            if (!Array.isArray(data)) return;
+            const grouped = {};
+            data.forEach(fb => {
+                if (!grouped[fb.postId]) grouped[fb.postId] = { like: 0, dislike: 0 };
+                if (fb.sentimiento === 'like') grouped[fb.postId].like++;
+                if (fb.sentimiento === 'dislike') grouped[fb.postId].dislike++;
+            });
+            Object.keys(grouped).forEach(postId => {
+                const likeSpan = document.getElementById('like-count-' + postId);
+                const dislikeSpan = document.getElementById('dislike-count-' + postId);
+                if (likeSpan) likeSpan.textContent = `👍 ${grouped[postId].like}`;
+                if (dislikeSpan) dislikeSpan.textContent = `👎 ${grouped[postId].dislike}`;
+            });
+        });
+    // Paginación robusta, búsqueda y filtros
+    const postsPerPage = 9;
+    let currentPage = 1;
+    function getVisibleCards() {
+        return Array.from(document.querySelectorAll('.post-card')).filter(card => card.style.display !== 'none');
+    }
+    function renderPagePills(totalPages) {
+        const pills = document.getElementById('pagePills');
+        pills.innerHTML = '';
+        for (let i = 1; i <= totalPages; i++) {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-sm ' + (i === currentPage ? 'btn-primary' : 'btn-outline-primary');
+            btn.textContent = i;
+            btn.onclick = () => { currentPage = i; paginate(); };
+            pills.appendChild(btn);
+        }
+    }
+    function paginate() {
+        const cards = getVisibleCards();
+        const totalPages = Math.ceil(cards.length / postsPerPage) || 1;
+        currentPage = Math.max(1, Math.min(currentPage, totalPages));
+        cards.forEach((card, i) => {
+            card.style.display = (i >= (currentPage-1)*postsPerPage && i < currentPage*postsPerPage) ? '' : 'none';
+        });
+        renderPagePills(totalPages);
+        document.getElementById('prevPage').disabled = currentPage === 1;
+        document.getElementById('nextPage').disabled = currentPage === totalPages || totalPages === 0;
+    }
+    document.getElementById('searchInput').addEventListener('input', function() {
+        const val = this.value.toLowerCase();
+        document.querySelectorAll('.post-card').forEach(card => {
+            const title = card.getAttribute('data-title');
+            const author = card.getAttribute('data-author');
+            const body = card.getAttribute('data-body');
+            card.style.display = (title.includes(val) || author.includes(val) || body.includes(val)) ? '' : 'none';
+        });
+        currentPage = 1;
+        paginate();
+    });
+    // Filtro por autor
+    const authorSet = new Set();
+    document.querySelectorAll('.post-card').forEach(card => {
+        const author = card.getAttribute('data-authorname');
+        if (author) authorSet.add(author);
+    });
+    const authorFilter = document.getElementById('authorFilter');
+    Array.from(authorSet).sort().forEach(author => {
+        const opt = document.createElement('option');
+        opt.value = author;
+        opt.textContent = author;
+        authorFilter.appendChild(opt);
+    });
+    authorFilter.addEventListener('change', function() {
+        const val = this.value;
+        document.querySelectorAll('.post-card').forEach(card => {
+            const author = card.getAttribute('data-authorname');
+            card.style.display = (!val || author === val) ? '' : 'none';
+        });
+        currentPage = 1;
+        paginate();
+    });
+    document.getElementById('prevPage').onclick = function() { currentPage--; paginate(); };
+    document.getElementById('nextPage').onclick = function() { currentPage++; paginate(); };
+    window.onload = function() { paginate(); };
+    // Modo oscuro/claro
+    const themeBtn = document.getElementById('toggleTheme');
+    themeBtn.onclick = function() {
+        document.body.classList.toggle('dark-mode');
+        themeBtn.innerHTML = document.body.classList.contains('dark-mode') ? '<i class="bi bi-sun"></i> Modo Claro' : '<i class="bi bi-moon"></i> Modo Oscuro';
+    };
+    // Internacionalización básica (solo textos de la página principal)
+    const langSelect = document.getElementById('langSelect');
+    langSelect.onchange = function() {
+        const lang = langSelect.value;
+        if(lang === 'en') {
+            document.querySelector('.fun-title').textContent = '📰 NewsHub';
+            document.querySelector('.lead').textContent = 'World news, enriched and at your fingertips';
+            document.querySelector('.mb-2[style*="#6366f1"]').textContent = 'News, analysis and global voices in one place';
+            document.getElementById('searchInput').placeholder = 'Search by title, author or content...';
+            authorFilter.options[0].textContent = 'All authors';
+            themeBtn.innerHTML = document.body.classList.contains('dark-mode') ? '<i class="bi bi-sun"></i> Light Mode' : '<i class="bi bi-moon"></i> Dark Mode';
+        } else {
+            document.querySelector('.fun-title').textContent = '📰 NewsHub';
+            document.querySelector('.lead').textContent = 'La actualidad mundial, enriquecida y a tu alcance';
+            document.querySelector('.mb-2[style*="#6366f1"]').textContent = 'Noticias, análisis y voces globales en un solo lugar';
+            document.getElementById('searchInput').placeholder = 'Buscar por título, autor o contenido...';
+            authorFilter.options[0].textContent = 'Todos los autores';
+            themeBtn.innerHTML = document.body.classList.contains('dark-mode') ? '<i class="bi bi-sun"></i> Modo Claro' : '<i class="bi bi-moon"></i> Modo Oscuro';
+        }
+    };
+</script>
+}

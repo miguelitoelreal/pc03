@@ -1,79 +1,138 @@
 @model NewsPortal.Services.EnrichedPostDto
 @{
-    ViewData["Title"] = Model.Title;
+    ViewData["Title"] = Model.Title + " | NewsHub";
 }
 <div class="container mt-4">
-    <div class="card fun-card p-4">
-        <h2 class="fun-title">@Model.Title</h2>
-        <p class="text-muted">por <b>@Model.Author?.name</b> <span class="badge bg-info text-dark ms-2">@Model.Author?.email</span></p>
-        <p class="fs-5">@Model.Body</p>
-        <div class="d-flex align-items-center mb-3">
-            <span class="fun-badge me-2">@Model.Comments.Count comentarios 💬</span>
-        </div>
-        <hr />
-        <h4 class="mb-3">Comentarios</h4>
-        <div>
-            @foreach (var comment in Model.Comments)
-            {
-                <div class="fun-comment">
-                    <strong>@comment.name</strong> <span class="text-muted small">(@comment.email)</span>
-                    <div>@comment.body</div>
+    <div class="row mb-4">
+        <div class="col-12 col-md-8 mx-auto">
+            <div class="card fun-card shadow-lg">
+                <div class="card-body">
+                    <h2 class="fun-title display-6 fw-bold mb-2">@Model.Title</h2>
+                    <div class="d-flex align-items-center mb-3">
+                        <img src="https://api.dicebear.com/7.x/identicon/svg?seed=@(Model.Author?.name ?? "user")" class="avatar me-2" alt="Avatar autor" />
+                        <span class="text-secondary">por <b>@Model.Author?.name</b></span>
+                        <span class="badge bg-info ms-3">@Model.Comments.Count comentarios</span>
+                    </div>
+                    <div class="mb-3 fs-5">@Model.Body</div>
+                    <div class="mb-3" id="feedback-summary-@Model.Id">
+                        <span class="badge bg-success" id="like-count-@Model.Id">👍 0</span>
+                        <span class="badge bg-danger ms-2" id="dislike-count-@Model.Id">👎 0</span>
+                    </div>
+                    <div class="d-flex gap-2 mb-2">
+                        <button id="likeBtn" class="btn btn-success fun-btn" title="Me gustó" aria-label="Me gustó">👍 Me gustó</button>
+                        <button id="dislikeBtn" class="btn btn-danger fun-btn" title="No me gustó" aria-label="No me gustó">👎 No me gustó</button>
+                        <span id="feedbackMsg" class="ms-2 align-self-center"></span>
+                    </div>
                 </div>
-            }
+            </div>
         </div>
-        <div class="mb-3 mt-4">
-            <form id="feedbackForm">
-                <input type="hidden" name="postId" value="@Model.Id" />
-                <button type="button" class="btn btn-success fun-btn me-2" id="likeBtn" onclick="sendFeedback('like')">👍 Me gustó</button>
-                <button type="button" class="btn btn-danger fun-btn" id="dislikeBtn" onclick="sendFeedback('dislike')">👎 No me gustó</button>
-            </form>
-            <div id="feedbackMsg" class="mt-2"></div>
+    </div>
+    <div class="row mb-4">
+        <div class="col-12 col-md-8 mx-auto">
+            <div class="card shadow-sm">
+                <div class="card-header bg-light fw-bold">Comentarios</div>
+                <div class="card-body">
+                    @if (Model.Comments.Count == 0)
+                    {
+                        <div class="text-muted">No hay comentarios para esta noticia.</div>
+                    }
+                    else
+                    {
+                        foreach (var c in Model.Comments)
+                        {
+                            <div class="d-flex align-items-start fun-comment mb-2">
+                                <img src="https://api.dicebear.com/7.x/identicon/svg?seed=@(c.email)" class="avatar me-2" alt="Avatar comentario" />
+                                <div>
+                                    <div class="fw-bold">@c.name</div>
+                                    <div class="text-muted small">@c.email</div>
+                                    <div>@c.body</div>
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
         </div>
+    </div>
+    <div class="text-center mb-5">
+        <a href="@Url.Action("Index", "Home")" class="btn btn-outline-primary"><i class="bi bi-arrow-left"></i> Volver a noticias</a>
     </div>
 </div>
 @section Scripts {
 <script>
-    let feedbackSent = false;
+    // Feedback resumen
+    fetch('/api/feedback')
+        .then(r => r.json())
+        .then(data => {
+            if (!Array.isArray(data)) return;
+            const grouped = {};
+            data.forEach(fb => {
+                if (!grouped[fb.postId]) grouped[fb.postId] = { like: 0, dislike: 0 };
+                if (fb.sentimiento === 'like') grouped[fb.postId].like++;
+                if (fb.sentimiento === 'dislike') grouped[fb.postId].dislike++;
+            });
+            const likeSpan = document.getElementById('like-count-' + @Model.Id);
+            const dislikeSpan = document.getElementById('dislike-count-' + @Model.Id);
+            if (likeSpan) likeSpan.textContent = `👍 ${grouped[@Model.Id]?.like || 0}`;
+            if (dislikeSpan) dislikeSpan.textContent = `👎 ${grouped[@Model.Id]?.dislike || 0}`;
+        });
+    // Feedback UX
+    let feedbackSent = localStorage.getItem('feedback-@Model.Id');
+    if (feedbackSent) {
+        document.getElementById('likeBtn').disabled = true;
+        document.getElementById('dislikeBtn').disabled = true;
+        document.getElementById('feedbackMsg').innerHTML = '<span class="text-success">¡Gracias por tu feedback!</span>';
+    }
+    document.getElementById('likeBtn').onclick = function() { sendFeedback('like'); };
+    document.getElementById('dislikeBtn').onclick = function() { sendFeedback('dislike'); };
     function sendFeedback(sentimiento) {
         if (feedbackSent) return;
-        var postId = @Model.Id;
+        document.getElementById('likeBtn').disabled = true;
+        document.getElementById('dislikeBtn').disabled = true;
+        document.getElementById('feedbackMsg').innerHTML = '<span class="text-info">Enviando...</span>';
         fetch('/api/feedback', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ postId: postId, sentimiento: sentimiento })
+            body: JSON.stringify({ postId: @Model.Id, sentimiento })
         })
-        .then(async r => {
-            if (r.ok) {
-                document.getElementById('feedbackMsg').innerHTML = '<span class="text-success">¡Gracias por tu feedback! 🎉</span>';
-            } else {
-                let msg = 'Error desconocido';
-                let text = '';
-                try {
-                    // Intenta leer como texto primero
-                    text = await r.text();
-                    // Intenta parsear como JSON si no es HTML
-                    if (text.trim().startsWith('{')) {
-                        const data = JSON.parse(text);
-                        msg = data.message || JSON.stringify(data);
-                    } else if (text.trim().startsWith('<')) {
-                        msg = 'Error del servidor o ruta no encontrada.';
-                    } else {
-                        msg = text;
-                    }
-                } catch {
-                    msg = text || 'Error inesperado.';
-                }
-                document.getElementById('feedbackMsg').innerHTML = '<span class="text-danger">' + msg + '</span>';
-            }
-            document.getElementById('likeBtn').disabled = true;
-            document.getElementById('dislikeBtn').disabled = true;
-            feedbackSent = true;
+        .then(r => {
+            if (r.ok) return; // No intentes parsear JSON si la respuesta es vacía
+            return r.json().then(err => Promise.reject(err));
+        })
+        .then(res => {
+            document.getElementById('feedbackMsg').innerHTML = '<span class="text-success">¡Gracias por tu feedback!</span>';
+            localStorage.setItem('feedback-@Model.Id', sentimiento);
+            feedbackSent = sentimiento;
+            fetch('/api/feedback')
+                .then(r => r.json())
+                .then(data => {
+                    const grouped = {};
+                    data.forEach(fb => {
+                        if (!grouped[fb.postId]) grouped[fb.postId] = { like: 0, dislike: 0 };
+                        if (fb.sentimiento === 'like') grouped[fb.postId].like++;
+                        if (fb.sentimiento === 'dislike') grouped[fb.postId].dislike++;
+                    });
+                    const likeSpan = document.getElementById('like-count-' + @Model.Id);
+                    const dislikeSpan = document.getElementById('dislike-count-' + @Model.Id);
+                    if (likeSpan) likeSpan.textContent = `👍 ${grouped[@Model.Id]?.like || 0}`;
+                    if (dislikeSpan) dislikeSpan.textContent = `👎 ${grouped[@Model.Id]?.dislike || 0}`;
+                });
         })
         .catch(err => {
-            document.getElementById('feedbackMsg').innerHTML = '<span class="text-danger">' + (err.message || 'Error de red o servidor.') + '</span>';
-            document.getElementById('likeBtn').disabled = true;
-            document.getElementById('dislikeBtn').disabled = true;
-            feedbackSent = true;
+            let msg = 'Error al enviar feedback.';
+            if (err && err.message) {
+                msg = err.message;
+            } else if (err && err.Message) {
+                msg = err.Message;
+            }
+            document.getElementById('feedbackMsg').innerHTML = `<span class="text-danger">${msg}</span>`;
+            if (msg.includes('feedback')) {
+                document.getElementById('likeBtn').disabled = true;
+                document.getElementById('dislikeBtn').disabled = true;
+            } else {
+                document.getElementById('likeBtn').disabled = false;
+                document.getElementById('dislikeBtn').disabled = false;
+            }
         });
     }
 </script>

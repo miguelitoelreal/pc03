@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using NewsPortal.Data;
 
@@ -10,9 +11,11 @@ using NewsPortal.Data;
 namespace NewsPortal.Migrations
 {
     [DbContext(typeof(FeedbackContext))]
-    partial class FeedbackContextModelSnapshot : ModelSnapshot
+    [Migration("20250524081926_AddUserKeyToFeedback")]
+    partial class AddUserKeyToFeedback
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder.HasAnnotation("ProductVersion", "9.0.5");
