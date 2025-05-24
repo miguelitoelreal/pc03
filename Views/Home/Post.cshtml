@@ -1,0 +1,43 @@
+@model NewsPortal.Services.EnrichedPostDto
+@{
+    ViewData["Title"] = Model.Title;
+}
+<div class="container mt-4">
+    <h2>@Model.Title</h2>
+    <p class="text-muted">por @Model.Author?.name (@Model.Author?.email)</p>
+    <p>@Model.Body</p>
+    <hr />
+    <h4>Comentarios (@Model.Comments.Count)</h4>
+    <ul class="list-group mb-3">
+        @foreach (var comment in Model.Comments)
+        {
+            <li class="list-group-item">
+                <strong>@comment.name</strong> <span class="text-muted small">(@comment.email)</span>
+                <div>@comment.body</div>
+            </li>
+        }
+    </ul>
+    <div class="mb-3">
+        <form id="feedbackForm">
+            <input type="hidden" name="postId" value="@Model.Id" />
+            <button type="button" class="btn btn-success me-2" onclick="sendFeedback('like')">👍 Me gustó</button>
+            <button type="button" class="btn btn-danger" onclick="sendFeedback('dislike')">👎 No me gustó</button>
+        </form>
+        <div id="feedbackMsg" class="mt-2"></div>
+    </div>
+</div>
+@section Scripts {
+<script>
+    function sendFeedback(sentimiento) {
+        var postId = @Model.Id;
+        fetch('/api/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ postId: postId, sentimiento: sentimiento })
+        })
+        .then(r => r.ok ? r.text() : r.json().then(j => { throw j; }))
+        .then(msg => document.getElementById('feedbackMsg').innerText = '¡Gracias por tu feedback!')
+        .catch(err => document.getElementById('feedbackMsg').innerText = err.message || 'Ya votaste o error.');
+    }
+</script>
+}
