@@ -26,11 +26,21 @@ namespace NewsPortal.Controllers
             {
                 return BadRequest(new { message = "Sentimiento inválido." });
             }
-            if (_context.Feedbacks.Any(f => f.PostId == feedback.PostId))
+            // Identificador único por usuario/navegador (usando una cookie simple)
+            string userKey = Request.Cookies["userKey"];
+            if (string.IsNullOrEmpty(userKey))
             {
-                return BadRequest(new { message = "Ya existe feedback para este post." });
+                userKey = Guid.NewGuid().ToString();
+                Response.Cookies.Append("userKey", userKey, new CookieOptions { Expires = DateTimeOffset.UtcNow.AddYears(1) });
+            }
+            // Solo un feedback por postId y userKey
+            bool yaExiste = _context.Feedbacks.Any(f => f.PostId == feedback.PostId && f.UserKey == userKey);
+            if (yaExiste)
+            {
+                return BadRequest(new { message = "Ya enviaste feedback para este post." });
             }
             feedback.Fecha = DateTime.UtcNow;
+            feedback.UserKey = userKey;
             _context.Feedbacks.Add(feedback);
             _context.SaveChanges();
             return Ok();
@@ -44,6 +54,29 @@ namespace NewsPortal.Controllers
         public IActionResult Get()
         {
             return Ok(_context.Feedbacks.ToList());
+        }
+
+        /// <summary>
+        /// Endpoint de prueba para Render: responde pong
+        /// </summary>
+        [HttpGet("/api/ping")]
+        public IActionResult Ping()
+        {
+            return Ok(new { message = "pong" });
+        }
+
+        /// <summary>
+        /// Obtiene la cantidad de likes y dislikes para un post específico.
+        /// </summary>
+        /// <param name="postId">ID del post</param>
+        /// <returns>200 OK con la cantidad de likes y dislikes</returns>
+        [HttpGet("/api/feedback/post/{postId}")]
+        public IActionResult GetFeedbackForPost(int postId)
+        {
+            var feedbacks = _context.Feedbacks.Where(f => f.PostId == postId).ToList();
+            var likes = feedbacks.Count(f => f.Sentimiento == "like");
+            var dislikes = feedbacks.Count(f => f.Sentimiento == "dislike");
+            return Ok(new { postId, likes, dislikes });
         }
     }
 }

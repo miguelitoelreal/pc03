@@ -10,5 +10,6 @@ namespace NewsPortal.Models
         public int PostId { get; set; }
         public string Sentimiento { get; set; } = string.Empty; // "like" o "dislike"
         public DateTime Fecha { get; set; }
+        public string UserKey { get; set; } = string.Empty; // Identificador único de usuario/navegador
     }
 }

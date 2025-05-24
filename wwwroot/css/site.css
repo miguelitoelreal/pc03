@@ -29,3 +29,45 @@ body {
 .form-floating > .form-control-plaintext:focus::placeholder, .form-floating > .form-control:focus::placeholder {
   text-align: start;
 }
+
+@media (max-width: 600px) {
+    .fun-title { font-size: 1.5rem; }
+    .fun-card { border-radius: 1rem; }
+}
+
+body.dark-mode {
+    background: #181a1b !important;
+    color: #f3f4f6;
+}
+
+.dark-mode .card.fun-card {
+    background: #23272b;
+    color: #f3f4f6;
+    box-shadow: 0 4px 16px #2226a033;
+}
+
+.dark-mode .navbar, .dark-mode .footer {
+    background: #23272b !important;
+    color: #f3f4f6;
+}
+
+.dark-mode .fun-badge {
+    background: #6366f1;
+    color: #fff;
+}
+
+.dark-mode .form-control, .dark-mode .form-select {
+    background: #23272b;
+    color: #f3f4f6;
+    border-color: #6366f1;
+}
+
+.dark-mode .btn-outline-primary {
+    color: #6366f1;
+    border-color: #6366f1;
+}
+
+.dark-mode .btn-outline-primary:hover {
+    background: #6366f1;
+    color: #fff;
+}
