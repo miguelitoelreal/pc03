@@ -28,6 +28,8 @@ app.UseRouting();
 
 app.UseAuthorization();
 
+app.MapControllers(); // <-- Esto habilita los endpoints de la API
+
 app.MapStaticAssets();
 
 app.MapControllerRoute(
