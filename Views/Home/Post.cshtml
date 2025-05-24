@@ -42,15 +42,27 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ postId: postId, sentimiento: sentimiento })
         })
-        .then(r => r.ok ? r.text() : r.json().then(j => { throw j; }))
-        .then(msg => {
-            document.getElementById('feedbackMsg').innerHTML = '<span class="text-success">¡Gracias por tu feedback! 🎉</span>';
+        .then(async r => {
+            if (r.ok) {
+                document.getElementById('feedbackMsg').innerHTML = '<span class="text-success">¡Gracias por tu feedback! 🎉</span>';
+            } else {
+                let msg = 'Error desconocido';
+                try {
+                    const data = await r.json();
+                    msg = data.message || JSON.stringify(data);
+                } catch {
+                    const text = await r.text();
+                    if (text.startsWith('<')) msg = 'Error del servidor o ruta no encontrada.';
+                    else msg = text;
+                }
+                document.getElementById('feedbackMsg').innerHTML = '<span class="text-danger">' + msg + '</span>';
+            }
             document.getElementById('likeBtn').disabled = true;
             document.getElementById('dislikeBtn').disabled = true;
             feedbackSent = true;
         })
         .catch(err => {
-            document.getElementById('feedbackMsg').innerHTML = '<span class="text-danger">' + (err.message || 'Ya votaste o error.') + '</span>';
+            document.getElementById('feedbackMsg').innerHTML = '<span class="text-danger">' + (err.message || 'Error de red o servidor.') + '</span>';
             document.getElementById('likeBtn').disabled = true;
             document.getElementById('dislikeBtn').disabled = true;
             feedbackSent = true;
