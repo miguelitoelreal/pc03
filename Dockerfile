@@ -15,6 +15,4 @@ COPY --from=build /app/publish .
 # Puerto por defecto para ASP.NET Core
 ENV ASPNETCORE_URLS=http://+:10000
 EXPOSE 10000
-# Render busca el archivo feedback.db en la raíz, así que lo copiamos si existe
-COPY feedback.db ./feedback.db
 ENTRYPOINT ["dotnet", "NewsPortal.dll"]
